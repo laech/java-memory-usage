@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '1.2.0'
+}
+
+sourceCompatibility = 1.8
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'commons-io:commons-io:2.4'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Premain-Class': 'mem.Main',
+                'Main-Class': 'mem.Main',
+        )
+    }
+}
+
+task runWithCompressedOops(dependsOn: shadowJar, type: Exec) {
+    commandLine 'java', '-XX:+UseCompressedOops', "-javaagent:$shadowJar.archivePath", '-jar', "$shadowJar.archivePath"
+}
+
+task runWithoutCompressedOops(dependsOn: shadowJar, type: Exec) {
+    commandLine 'java', '-XX:-UseCompressedOops', "-javaagent:$shadowJar.archivePath", '-jar', "$shadowJar.archivePath"
+}
+
+task outputJavaVersion(type: Exec) {
+    commandLine 'java', '-version'
+}
+
+task run(dependsOn: [runWithCompressedOops, runWithoutCompressedOops, outputJavaVersion])
+
+tasks.withType(Exec).each {
+    it.doFirst {
+        standardOutput.println commandLine.join(' ')
+    }
+}
